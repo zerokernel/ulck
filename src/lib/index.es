@@ -36,11 +36,12 @@ function isOrder(order) {
 /**
  * 创建
  */
-async function create({title, pid, image, description, order, hide, info}) {
+async function create({title, pid, type, image, description, order, hide, info}) {
 	if (!isString(title, true)) {throw "标题必须为非空字符串";}
 	pid = getId(pid);
 	if (!isString(image)) {image = "";}
 	if (!isString(description)) {description = "";}
+	if (!isString(type)) {type = "";}
 	if (!isOrder(order)) {order = 10000;}
 	hide = Boolean(hide);
 	if (!info) {
@@ -53,7 +54,7 @@ async function create({title, pid, image, description, order, hide, info}) {
 		}
 	}
 
-	let value = {title, pid, image, description, order, hide, info, };
+	let value = {title, pid, type, image, description, order, hide, info, };
 	//插入到库
 	let {result,ops} = await this.db.insert(value);
 	if (result.ok && ops[0]) {return ops[0]._id;}
@@ -63,13 +64,14 @@ async function create({title, pid, image, description, order, hide, info}) {
 /**
  * 修改
  */
-async function set(id, {title, pid, image, description, order, hide, info, }) {
+async function set(id, {title, pid, type, image, description, order, hide, info, }) {
 	if (!(id = getId(id))) {throw new Error("Id必须为24为16进制字符串");}
 	let value = {};
 	if (isString(title, true)) {value.title = title;}
 	if (pid === null || (pid = getId(pid))) {value.pid = pid;}
 	if (isString(image)) {value.image = image;}
 	if (isString(description)) {value.description = description;}
+	if (isString(type)) {value.type = type;}
 	if (isOrder(order)) {value.order = parseInt(order);}
 	if (typeof hide === "boolean") {value.hide = hide;}
 	if (info) {for (let k in info) {value["info." + k] = info[k];}}
@@ -99,13 +101,14 @@ async function get(id) {
 /**
  * 查询
  */
-async function query({title, pid, hide, info, sort, limit:[from = 0, length = 20] = [], }) {
+async function query({title, pid, type, hide, info, sort, limit:[from = 0, length = 20] = [], }) {
 	let condition = {};
 	if (pid instanceof Array) {
 		condition.pid = {$in:pid.filter(x=> x === null || getId(x))};
 	}else if (pid === null || getId(pid)) {
 		condition.pid = pid;
 	}
+	if (isString(type)) {condition.type = type;}
 	if (typeof hide === "boolean") {condition.hide = hide;}
 	if (info) {for (let k in info) {condition["info." + k] = info[k];}}
 
@@ -118,17 +121,21 @@ async function query({title, pid, hide, info, sort, limit:[from = 0, length = 20
 	return {list, num};
 }
 
-export default function cmk(db, {} = {}) {
-	if (!(db instanceof Collection)) {throw "不是有效的Mongodb Collection";}
+export default function ulck(db, {} = {}) {
+	if (!(db instanceof Collection)) {throw new Error("不是有效的Mongodb Collection");}
 
 	let ret = {};
 	let cfg = Object.create(ret);
 	cfg.db = db;
 
-	ret.create	= create.bind(cfg);
+	ret.add		= create.bind(cfg);
+	ret.delete	= remove.bind(cfg);
 	ret.set		= set.bind(cfg);
-	ret.remove	= remove.bind(cfg);
 	ret.get		= get.bind(cfg);
 	ret.query	= query.bind(cfg);
+
+	ret.create	= create.bind(cfg);
+	ret.remove	= remove.bind(cfg);
+
 	return ret;
 }

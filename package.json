@@ -1,6 +1,6 @@
 {
   "name": "ulck",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "description": "Unlimited Level Category Kernel",
   "main": "lib/index.js",
   "scripts": {
