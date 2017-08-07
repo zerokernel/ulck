@@ -104,8 +104,15 @@ async function get(id) {
 async function query({title, pid, type, hide, info, sort, limit:[from = 0, length = 20] = [], }) {
 	let condition = {};
 	if (pid instanceof Array) {
-		condition.pid = {$in:pid.filter(x=> x === null || getId(x))};
-	}else if (pid === null || getId(pid)) {
+		let $in = [];
+		for (let i = 0, l = pid.length; i < l; i++) {
+			let id = pid[i];
+			if (id === null || (id = getId(id))) {
+				$in.push(id);
+			}
+		}
+		condition.pid = {$in};
+	}else if (pid === null || (pid = getId(pid))) {
 		condition.pid = pid;
 	}
 	if (isString(type)) {condition.type = type;}
@@ -117,8 +124,10 @@ async function query({title, pid, type, hide, info, sort, limit:[from = 0, lengt
 	if (from < 0 || from !== parseInt(from) || isNaN(from) || from >0xFFFFFFFF) {from = 0;}
 	if (length <= 0 || length !== parseInt(length) || isNaN(length) || length > 1000) {length = 20;}
 	cursor.skip(from).limit(length);
-	let [list, num] = await Promise.all([cursor.toArray().then(rs=>Promise.all(rs.map(r=>info.call(this,r)))), cursor.count()]);
-	return {list, num};
+	let list = cursor.toArray().then(rs=>Promise.all(rs.map(r=>info.call(this,r))));
+	let total = cursor.count();
+	([list, total] = await Promise.all([list, total]));
+	return {list, total};
 }
 
 export default function ulck(db, {} = {}) {
