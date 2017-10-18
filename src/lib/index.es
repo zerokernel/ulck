@@ -91,11 +91,44 @@ async function remove(id) {
 /**
  * 获取
  */
-async function get(id) {
-	if (!(id = getId(id))) {throw new Error("Id必须为24为16进制字符串");}
-	let rs = await this.db.find({_id:id}).toArray();
-	if (rs.length) {return await info.call(this, rs[0]);}
-	return null;
+async function get(id, {level = 0} = {}) {
+	if (!(id = getId(id))) {
+		throw new Error("Id必须为24为16进制字符串");
+	}
+	let info = await this.db.findOne({_id:id});
+	if (!info) {
+		return null;
+	}
+	//子分类
+	let idSet = {[id]:1};
+	let ids = [id];
+	let descendant = info.descendant = [];
+	while(ids.length && level > 0) {
+		level--;
+		ids = await this.db.find({pid: {$in:ids}}, {_id:1}).toArray();
+		ids = ids.map(({_id}) => _id).filter(id => !(id in idSet));
+		ids.map(id => idSet[id] = 1);
+		if (ids.length) {
+			descendant.push(ids);
+		}
+	}
+	//父分类
+	idSet = {[id]:1};
+	let ancestor = info.ancestor = [];
+	let pid = info.pid;
+	while(pid) {
+		pid = await this.db.findOne({_id:pid},{pid:1, _id:0});
+		if (!pid) {
+			break;
+		}
+		pid = pid.pid;
+		if (pid in idSet) {
+			break;
+		}
+		idSet[pid] = 1;
+		ancestor.unshift(pid);
+	}
+	return await info.call(this, info);
 }
 
 /**
