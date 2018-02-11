@@ -1,14 +1,17 @@
 {
   "name": "ulck",
-  "version": "0.0.7",
+  "version": "0.1.0",
   "description": "Unlimited Level Category Kernel",
   "main": "lib/index.js",
   "engines": {
     "node": ">=8.9.0"
   },
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "node test"
   },
   "author": "wangchenxunum<wangchenxunum@qq.com>",
-  "license": "MIT"
+  "license": "MIT",
+  "devDependencies": {
+    "mongodb": "^3.0.2"
+  }
 }
